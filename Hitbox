@@ -2,10 +2,11 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
--- Xóa UI cũ nếu chạy lại script
-if CoreGui:FindFirstChild("HitboxPillUI") then
-    CoreGui.HitboxPillUI:Destroy()
+-- Xóa UI cũ nếu tồn tại
+if CoreGui:FindFirstChild("MimicKtl") then
+    CoreGui.MimicKtl:Destroy()
 end
 
 -- Cấu hình Hitbox
@@ -13,174 +14,322 @@ local HitboxSettings = {
     Enabled = false,
     Size = 15,
     Transparency = 0.7,
-    Color = Color3.fromRGB(255, 50, 50)
+    Color = Color3.fromRGB(255, 0, 0)
 }
 
--- Khởi tạo UI
+-- ====== UI CHÍNH ======
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HitboxPillUI"
+ScreenGui.Name = "MimicKtl"
 ScreenGui.Parent = CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.ResetOnSpawn = false
 
+-- Frame chính - viền đỏ
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
-MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.Size = UDim2.new(0, 320, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 0, 0)
 MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
 MainFrame.Active = true
-MainFrame.Draggable = true -- Cho phép kéo thả
+MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
+-- Viền đỏ dày
+local BorderFrame = Instance.new("Frame")
+BorderFrame.Size = UDim2.new(1, 0, 1, 0)
+BorderFrame.BackgroundTransparency = 1
+BorderFrame.BorderSizePixel = 3
+BorderFrame.BorderColor3 = Color3.fromRGB(180, 0, 0)
+BorderFrame.Parent = MainFrame
+
+-- Bo góc
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 20) -- Bo góc tạo hình tròn dài khi thu nhỏ
+UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
--- Khung chứa nội dung (sẽ ẩn đi khi thu nhỏ)
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Size = UDim2.new(1, 0, 1, 0)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
+-- Viền đỏ bên trong
+local InnerBorder = Instance.new("Frame")
+InnerBorder.Size = UDim2.new(1, -10, 1, -10)
+InnerBorder.Position = UDim2.new(0, 5, 0, 5)
+InnerBorder.BackgroundTransparency = 1
+InnerBorder.BorderSizePixel = 2
+InnerBorder.BorderColor3 = Color3.fromRGB(220, 0, 0)
+InnerBorder.Parent = MainFrame
 
+-- ====== BACKGROUND HIỆU ỨNG ======
+local BgEffect = Instance.new("Frame")
+BgEffect.Size = UDim2.new(1, -12, 1, -12)
+BgEffect.Position = UDim2.new(0, 6, 0, 6)
+BgEffect.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+BgEffect.BorderSizePixel = 0
+BgEffect.Parent = MainFrame
+Instance.new("UICorner", BgEffect).CornerRadius = UDim.new(0, 8)
+
+-- Vệt máu background
+for i = 1, 5 do
+    local blood = Instance.new("Frame")
+    blood.Size = UDim2.new(0, math.random(30, 80), 0, math.random(2, 4))
+    blood.Position = UDim2.new(0, math.random(10, 250), 0, math.random(10, 180))
+    blood.BackgroundColor3 = Color3.fromRGB(140 - math.random(0, 40), 0, 0)
+    blood.BorderSizePixel = 0
+    blood.BackgroundTransparency = 0.3 + math.random() * 0.4
+    blood.Rotation = math.random(-30, 30)
+    blood.Parent = BgEffect
+    Instance.new("UICorner", blood).CornerRadius = UDim.new(0, 2)
+end
+
+-- ====== TIÊU ĐỀ ======
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Position = UDim2.new(0, 0, 0, 5)
 Title.BackgroundTransparency = 1
-Title.Text = "Hitbox Quái Hub"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Text = "⚰ MIMIC KTL ⚰"
+Title.TextColor3 = Color3.fromRGB(200, 0, 0)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 18
-Title.Parent = ContentFrame
+Title.TextSize = 20
+Title.TextStrokeTransparency = 0.3
+Title.TextStrokeColor3 = Color3.fromRGB(100, 0, 0)
+Title.Parent = BgEffect
 
--- Nút Bật/Tắt Hitbox
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 260, 0, 40)
-ToggleBtn.Position = UDim2.new(0, 20, 0, 50)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-ToggleBtn.Text = "Trạng thái: TẮT"
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 16
-ToggleBtn.Parent = ContentFrame
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 8)
+-- Đường kẻ đỏ dưới title
+local Line1 = Instance.new("Frame")
+Line1.Size = UDim2.new(0.8, 0, 0, 2)
+Line1.Position = UDim2.new(0.1, 0, 0, 40)
+Line1.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+Line1.BorderSizePixel = 0
+Line1.Parent = BgEffect
 
--- Ô nhập kích thước vô hạn
+-- ====== NHẬP ĐỘ TO NHỎ ======
+local SizeLabel = Instance.new("TextLabel")
+SizeLabel.Size = UDim2.new(0, 80, 0, 25)
+SizeLabel.Position = UDim2.new(0, 15, 0, 50)
+SizeLabel.BackgroundTransparency = 1
+SizeLabel.Text = "KÍCH THƯỚC:"
+SizeLabel.TextColor3 = Color3.fromRGB(180, 80, 80)
+SizeLabel.Font = Enum.Font.GothamBold
+SizeLabel.TextSize = 13
+SizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+SizeLabel.Parent = BgEffect
+
 local SizeInput = Instance.new("TextBox")
-SizeInput.Size = UDim2.new(0, 260, 0, 40)
-SizeInput.Position = UDim2.new(0, 20, 0, 100)
-SizeInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SizeInput.Size = UDim2.new(0, 170, 0, 30)
+SizeInput.Position = UDim2.new(0, 15, 0, 75)
+SizeInput.BackgroundColor3 = Color3.fromRGB(5, 0, 0)
 SizeInput.Text = "15"
-SizeInput.PlaceholderText = "Nhập số lượng Hitbox (VD: 100, 999)"
-SizeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-SizeInput.Font = Enum.Font.Gotham
-SizeInput.TextSize = 16
-SizeInput.Parent = ContentFrame
-Instance.new("UICorner", SizeInput).CornerRadius = UDim.new(0, 8)
+SizeInput.PlaceholderText = "Nhập số..."
+SizeInput.PlaceholderColor3 = Color3.fromRGB(100, 30, 30)
+SizeInput.TextColor3 = Color3.fromRGB(220, 0, 0)
+SizeInput.Font = Enum.Font.GothamBlack
+SizeInput.TextSize = 18
+SizeInput.ClearTextOnFocus = false
+SizeInput.BorderSizePixel = 2
+SizeInput.BorderColor3 = Color3.fromRGB(180, 0, 0)
+SizeInput.Parent = BgEffect
+Instance.new("UICorner", SizeInput).CornerRadius = UDim.new(0, 6)
 
--- Nút Thu Nhỏ
-local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Size = UDim2.new(0, 260, 0, 35)
-MinimizeBtn.Position = UDim2.new(0, 20, 0, 150)
-MinimizeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-MinimizeBtn.Text = "Thu nhỏ Menu"
-MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextSize = 14
-MinimizeBtn.Parent = ContentFrame
-Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 8)
+-- ====== ON / OFF ======
+local ToggleLabel = Instance.new("TextLabel")
+ToggleLabel.Size = UDim2.new(0, 60, 0, 25)
+ToggleLabel.Position = UDim2.new(0, 15, 0, 115)
+ToggleLabel.BackgroundTransparency = 1
+ToggleLabel.Text = "TRẠNG THÁI:"
+ToggleLabel.TextColor3 = Color3.fromRGB(180, 80, 80)
+ToggleLabel.Font = Enum.Font.GothamBold
+ToggleLabel.TextSize = 13
+ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+ToggleLabel.Parent = BgEffect
 
--- Chữ hiển thị khi Menu ở dạng viên thuốc (Pill)
+-- Nút ON/OFF dạng trượt
+local ToggleBg = Instance.new("Frame")
+ToggleBg.Size = UDim2.new(0, 70, 0, 30)
+ToggleBg.Position = UDim2.new(0, 15, 0, 140)
+ToggleBg.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+ToggleBg.BorderSizePixel = 2
+ToggleBg.BorderColor3 = Color3.fromRGB(100, 0, 0)
+ToggleBg.Parent = BgEffect
+Instance.new("UICorner", ToggleBg).CornerRadius = UDim.new(0, 15)
+
+local ToggleKnob = Instance.new("Frame")
+ToggleKnob.Size = UDim2.new(0, 26, 0, 26)
+ToggleKnob.Position = UDim2.new(0, 2, 0, 2)
+ToggleKnob.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+ToggleKnob.BorderSizePixel = 0
+ToggleKnob.Parent = ToggleBg
+local KnobCorner = Instance.new("UICorner")
+KnobCorner.CornerRadius = UDim.new(0, 13)
+KnobCorner.Parent = ToggleKnob
+
+local ToggleText = Instance.new("TextLabel")
+ToggleText.Size = UDim2.new(1, 0, 1, 0)
+ToggleText.BackgroundTransparency = 1
+ToggleText.Text = "OFF"
+ToggleText.TextColor3 = Color3.fromRGB(180, 50, 50)
+ToggleText.Font = Enum.Font.GothamBold
+ToggleText.TextSize = 14
+ToggleText.Parent = ToggleBg
+
+-- Nút click toggle
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+ToggleBtn.BackgroundTransparency = 1
+ToggleBtn.Text = ""
+ToggleBtn.Parent = ToggleBg
+
+-- Đèn báo hiệu
+local StatusLight = Instance.new("Frame")
+StatusLight.Size = UDim2.new(0, 8, 0, 8)
+StatusLight.Position = UDim2.new(0, 100, 0, 155)
+StatusLight.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
+StatusLight.BorderSizePixel = 0
+StatusLight.Parent = BgEffect
+Instance.new("UICorner", StatusLight).CornerRadius = UDim.new(0, 4)
+
+-- Status text
+local StatusText = Instance.new("TextLabel")
+StatusText.Size = UDim2.new(0, 80, 0, 20)
+StatusText.Position = UDim2.new(0, 115, 0, 149)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = "INACTIVE"
+StatusText.TextColor3 = Color3.fromRGB(80, 0, 0)
+StatusText.Font = Enum.Font.GothamBold
+StatusText.TextSize = 11
+StatusText.TextXAlignment = Enum.TextXAlignment.Left
+StatusText.Parent = BgEffect
+
+-- ====== THU NHỎ / PHÓNG TO ======
+local CollapseBtn = Instance.new("TextButton")
+CollapseBtn.Size = UDim2.new(0, 50, 0, 20)
+CollapseBtn.Position = UDim2.new(1, -60, 0, 5)
+CollapseBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+CollapseBtn.BorderSizePixel = 1
+CollapseBtn.BorderColor3 = Color3.fromRGB(200, 0, 0)
+CollapseBtn.Text = "—"
+CollapseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+CollapseBtn.Font = Enum.Font.GothamBold
+CollapseBtn.TextSize = 16
+CollapseBtn.Parent = BgEffect
+Instance.new("UICorner", CollapseBtn).CornerRadius = UDim.new(0, 4)
+
+-- ====== PILL MODE (thu nhỏ) ======
+local PillFrame = Instance.new("Frame")
+PillFrame.Size = UDim2.new(0, 60, 0, 30)
+PillFrame.Position = UDim2.new(0.5, -30, 0, 10)
+PillFrame.BackgroundColor3 = Color3.fromRGB(10, 0, 0)
+PillFrame.BorderSizePixel = 2
+PillFrame.BorderColor3 = Color3.fromRGB(180, 0, 0)
+PillFrame.Visible = false
+PillFrame.Parent = ScreenGui
+Instance.new("UICorner", PillFrame).CornerRadius = UDim.new(0, 15)
+
 local PillText = Instance.new("TextLabel")
 PillText.Size = UDim2.new(1, 0, 1, 0)
 PillText.BackgroundTransparency = 1
-PillText.Text = " MỞ MENU "
-PillText.TextColor3 = Color3.fromRGB(255, 255, 255)
+PillText.Text = "Mimic Ktl"
+PillText.TextColor3 = Color3.fromRGB(200, 0, 0)
 PillText.Font = Enum.Font.GothamBold
-PillText.TextSize = 16
-PillText.Visible = false
-PillText.Parent = MainFrame
+PillText.TextSize = 10
+PillText.Parent = PillFrame
 
-local PillClick = Instance.new("TextButton")
-PillClick.Size = UDim2.new(1, 0, 1, 0)
-PillClick.BackgroundTransparency = 1
-PillClick.Text = ""
-PillClick.Visible = false
-PillClick.Parent = MainFrame
+local PillBtn = Instance.new("TextButton")
+PillBtn.Size = UDim2.new(1, 0, 1, 0)
+PillBtn.BackgroundTransparency = 1
+PillBtn.Text = ""
+PillBtn.Parent = PillFrame
 
--- Logic Giao diện
-local isMinimized = false
+-- ====== LOGIC TOGGLE ======
+local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+
+local function UpdateToggleUI()
+    if HitboxSettings.Enabled then
+        ToggleKnob:TweenPosition(UDim2.new(0, 42, 0, 2), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+        ToggleText.Text = "ON"
+        ToggleText.TextColor3 = Color3.fromRGB(200, 0, 0)
+        ToggleBg.BackgroundColor3 = Color3.fromRGB(50, 5, 5)
+        ToggleBg.BorderColor3 = Color3.fromRGB(200, 0, 0)
+        ToggleKnob.BackgroundColor3 = Color3.fromRGB(220, 0, 0)
+        StatusLight.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        StatusText.Text = "ACTIVE"
+        StatusText.TextColor3 = Color3.fromRGB(255, 0, 0)
+        
+        -- Hiệu ứng nhấp nháy đèn
+        spawn(function()
+            while HitboxSettings.Enabled and StatusLight do
+                StatusLight:TweenSize(UDim2.new(0, 12, 0, 12), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+                task.wait(0.3)
+                StatusLight:TweenSize(UDim2.new(0, 8, 0, 8), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.3, true)
+                task.wait(0.3)
+            end
+        end)
+    else
+        ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.15, true)
+        ToggleText.Text = "OFF"
+        ToggleText.TextColor3 = Color3.fromRGB(120, 30, 30)
+        ToggleBg.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+        ToggleBg.BorderColor3 = Color3.fromRGB(100, 0, 0)
+        ToggleKnob.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+        StatusLight.BackgroundColor3 = Color3.fromRGB(40, 0, 0)
+        StatusText.Text = "INACTIVE"
+        StatusText.TextColor3 = Color3.fromRGB(80, 0, 0)
+        StatusLight.Size = UDim2.new(0, 8, 0, 8)
+    end
+end
 
 ToggleBtn.MouseButton1Click:Connect(function()
     HitboxSettings.Enabled = not HitboxSettings.Enabled
-    if HitboxSettings.Enabled then
-        ToggleBtn.Text = "Trạng thái: ĐANG BẬT"
-        ToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
-    else
-        ToggleBtn.Text = "Trạng thái: TẮT"
-        ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
-    end
+    UpdateToggleUI()
 end)
 
--- Cập nhật hitbox bằng TextBox (cho phép nhập số tùy thích)
+-- Nhập kích thước
 SizeInput.FocusLost:Connect(function()
     local num = tonumber(SizeInput.Text)
-    if num then
+    if num and num > 0 then
         HitboxSettings.Size = num
     else
-        SizeInput.Text = tostring(HitboxSettings.Size) -- Trả về số cũ nếu nhập chữ
+        SizeInput.Text = tostring(HitboxSettings.Size)
     end
 end)
 
--- Logic Cuộn lại thành hình tròn dài (Pill Shape)
-local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+-- ====== LOGIC THU NHỎ ======
+local isMinimized = false
+local collapseTween = TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 
-MinimizeBtn.MouseButton1Click:Connect(function()
+CollapseBtn.MouseButton1Click:Connect(function()
     isMinimized = true
-    ContentFrame.Visible = false
+    MainFrame.Visible = false
+    PillFrame.Visible = true
     
-    -- Cuộn lại thành hình tròn dài ngang và bay lên giữa góc trên
-    local shrinkTween = TweenService:Create(MainFrame, tweenInfo, {
-        Size = UDim2.new(0, 140, 0, 40),
-        Position = UDim2.new(0.5, -70, 0, 20) -- Cố định ở giữa phía trên
-    })
-    
-    shrinkTween:Play()
-    shrinkTween.Completed:Wait()
-    
-    PillText.Visible = true
-    PillClick.Visible = true
+    -- Bay vào góc
+    PillFrame:TweenPosition(UDim2.new(0.5, -30, 0, 15), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.3, true)
 end)
 
-PillClick.MouseButton1Click:Connect(function()
+PillBtn.MouseButton1Click:Connect(function()
     isMinimized = false
-    PillText.Visible = false
-    PillClick.Visible = false
-    
-    local expandTween = TweenService:Create(MainFrame, tweenInfo, {
-        Size = UDim2.new(0, 300, 0, 200),
-        Position = UDim2.new(0.5, -150, 0.5, -100)
-    })
-    
-    expandTween:Play()
-    expandTween.Completed:Wait()
-    
-    ContentFrame.Visible = true
+    PillFrame.Visible = false
+    MainFrame.Visible = true
 end)
+
+-- ====== HITBOX LOOP ======
+local Debris = game:GetService("Debris")
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(0.3) do
         if HitboxSettings.Enabled then
             pcall(function()
                 for _, obj in pairs(workspace:GetDescendants()) do
                     if obj:IsA("Humanoid") and obj.Parent and obj.Parent:IsA("Model") then
                         local character = obj.Parent
+                        local hrp = character:FindFirstChild("HumanoidRootPart")
                         
-                        -- Chặn target vào quái đã chết (ghost) và bỏ qua người chơi
-                        if obj.Health > 0 and not Players:GetPlayerFromCharacter(character) then
-                            local hrp = character:FindFirstChild("HumanoidRootPart")
+                        -- CHỈ hitbox quái: Health > 0, KHÔNG phải player, có HRP
+                        if obj.Health > 0 and hrp and not Players:GetPlayerFromCharacter(character) then
+                            local currentSize = hrp.Size.X
+                            local targetSize = HitboxSettings.Size
                             
-                            if hrp then
-                                hrp.Size = Vector3.new(HitboxSettings.Size, HitboxSettings.Size, HitboxSettings.Size)
-                                hrp.Transparency = HitboxSettings.Transparency
-                                hrp.Color = HitboxSettings.Color
+                            -- Chỉ thay đổi nếu khác kích thước để tránh lag
+                            if math.abs(currentSize - targetSize) > 0.5 then
+                                hrp.Size = Vector3.new(targetSize, targetSize, targetSize)
+                                hrp.Transparency = 0.6
+                                hrp.Color = Color3.fromRGB(255, 0, 0)
                                 hrp.Material = Enum.Material.Neon
                                 hrp.CanCollide = false
                             end
@@ -192,3 +341,7 @@ task.spawn(function()
     end
 end)
 
+-- ====== KHỞI TẠO UI ======
+UpdateToggleUI()
+
+print("⚔️ Mimic Ktl UI đã tải - Chế độ hitbox quái (KHÔNG player, KHÔNG NPC local)")
