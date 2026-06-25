@@ -1,0 +1,194 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+-- Xóa UI cũ nếu chạy lại script
+if CoreGui:FindFirstChild("HitboxPillUI") then
+    CoreGui.HitboxPillUI:Destroy()
+end
+
+-- Cấu hình Hitbox
+local HitboxSettings = {
+    Enabled = false,
+    Size = 15,
+    Transparency = 0.7,
+    Color = Color3.fromRGB(255, 50, 50)
+}
+
+-- Khởi tạo UI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HitboxPillUI"
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Active = true
+MainFrame.Draggable = true -- Cho phép kéo thả
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 20) -- Bo góc tạo hình tròn dài khi thu nhỏ
+UICorner.Parent = MainFrame
+
+-- Khung chứa nội dung (sẽ ẩn đi khi thu nhỏ)
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, 0, 1, 0)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Text = "Hitbox Quái Hub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.Parent = ContentFrame
+
+-- Nút Bật/Tắt Hitbox
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0, 260, 0, 40)
+ToggleBtn.Position = UDim2.new(0, 20, 0, 50)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ToggleBtn.Text = "Trạng thái: TẮT"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextSize = 16
+ToggleBtn.Parent = ContentFrame
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 8)
+
+-- Ô nhập kích thước vô hạn
+local SizeInput = Instance.new("TextBox")
+SizeInput.Size = UDim2.new(0, 260, 0, 40)
+SizeInput.Position = UDim2.new(0, 20, 0, 100)
+SizeInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+SizeInput.Text = "15"
+SizeInput.PlaceholderText = "Nhập số lượng Hitbox (VD: 100, 999)"
+SizeInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SizeInput.Font = Enum.Font.Gotham
+SizeInput.TextSize = 16
+SizeInput.Parent = ContentFrame
+Instance.new("UICorner", SizeInput).CornerRadius = UDim.new(0, 8)
+
+-- Nút Thu Nhỏ
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 260, 0, 35)
+MinimizeBtn.Position = UDim2.new(0, 20, 0, 150)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+MinimizeBtn.Text = "Thu nhỏ Menu"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 14
+MinimizeBtn.Parent = ContentFrame
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 8)
+
+-- Chữ hiển thị khi Menu ở dạng viên thuốc (Pill)
+local PillText = Instance.new("TextLabel")
+PillText.Size = UDim2.new(1, 0, 1, 0)
+PillText.BackgroundTransparency = 1
+PillText.Text = " MỞ MENU "
+PillText.TextColor3 = Color3.fromRGB(255, 255, 255)
+PillText.Font = Enum.Font.GothamBold
+PillText.TextSize = 16
+PillText.Visible = false
+PillText.Parent = MainFrame
+
+local PillClick = Instance.new("TextButton")
+PillClick.Size = UDim2.new(1, 0, 1, 0)
+PillClick.BackgroundTransparency = 1
+PillClick.Text = ""
+PillClick.Visible = false
+PillClick.Parent = MainFrame
+
+-- Logic Giao diện
+local isMinimized = false
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    HitboxSettings.Enabled = not HitboxSettings.Enabled
+    if HitboxSettings.Enabled then
+        ToggleBtn.Text = "Trạng thái: ĐANG BẬT"
+        ToggleBtn.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        ToggleBtn.Text = "Trạng thái: TẮT"
+        ToggleBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+    end
+end)
+
+-- Cập nhật hitbox bằng TextBox (cho phép nhập số tùy thích)
+SizeInput.FocusLost:Connect(function()
+    local num = tonumber(SizeInput.Text)
+    if num then
+        HitboxSettings.Size = num
+    else
+        SizeInput.Text = tostring(HitboxSettings.Size) -- Trả về số cũ nếu nhập chữ
+    end
+end)
+
+-- Logic Cuộn lại thành hình tròn dài (Pill Shape)
+local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = true
+    ContentFrame.Visible = false
+    
+    -- Cuộn lại thành hình tròn dài ngang và bay lên giữa góc trên
+    local shrinkTween = TweenService:Create(MainFrame, tweenInfo, {
+        Size = UDim2.new(0, 140, 0, 40),
+        Position = UDim2.new(0.5, -70, 0, 20) -- Cố định ở giữa phía trên
+    })
+    
+    shrinkTween:Play()
+    shrinkTween.Completed:Wait()
+    
+    PillText.Visible = true
+    PillClick.Visible = true
+end)
+
+PillClick.MouseButton1Click:Connect(function()
+    isMinimized = false
+    PillText.Visible = false
+    PillClick.Visible = false
+    
+    local expandTween = TweenService:Create(MainFrame, tweenInfo, {
+        Size = UDim2.new(0, 300, 0, 200),
+        Position = UDim2.new(0.5, -150, 0.5, -100)
+    })
+    
+    expandTween:Play()
+    expandTween.Completed:Wait()
+    
+    ContentFrame.Visible = true
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        if HitboxSettings.Enabled then
+            pcall(function()
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Humanoid") and obj.Parent and obj.Parent:IsA("Model") then
+                        local character = obj.Parent
+                        
+                        -- Chặn target vào quái đã chết (ghost) và bỏ qua người chơi
+                        if obj.Health > 0 and not Players:GetPlayerFromCharacter(character) then
+                            local hrp = character:FindFirstChild("HumanoidRootPart")
+                            
+                            if hrp then
+                                hrp.Size = Vector3.new(HitboxSettings.Size, HitboxSettings.Size, HitboxSettings.Size)
+                                hrp.Transparency = HitboxSettings.Transparency
+                                hrp.Color = HitboxSettings.Color
+                                hrp.Material = Enum.Material.Neon
+                                hrp.CanCollide = false
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
